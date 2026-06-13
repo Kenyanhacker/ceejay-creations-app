@@ -194,7 +194,6 @@ with st.sidebar:
             st.error("Please add and select an active driver account row.")
         else:
             try:
-                # Clean up characters text if needed
                 amt_val = float(payment_amount.replace("KES", "").replace(",", "").strip())
                 date_str = log_date.strftime('%Y-%m-%d')
                 
@@ -335,11 +334,19 @@ with workspace_left:
     conn.close()
 
     if not df_grid.empty:
-        # Formats Currency inside data table structure
-        df_grid['Latest Value'] = df_grid['Latest Value'].apply(lambda x: f"KES {x:,.2f}" if pd.notnull(x) else "None")
+        # Safe format logic: converts to float dynamically and catches conversion errors safely
+        def safe_currency_format(val):
+            try:
+                if pd.notnull(val) and val != "None" and val != "":
+                    return f"KES {float(val):,.2f}"
+            except (ValueError, TypeError):
+                pass
+            return "None"
+
+        # Safely convert and format columns
+        df_grid['Latest Value'] = df_grid['Latest Value'].apply(safe_currency_format)
         df_grid['Most Recent Activity'] = df_grid['Most Recent Activity'].fillna("No activity logged")
         
-        # Displays sorting column capabilities natively in the web browser
         st.dataframe(df_grid, use_container_width=True, hide_index=True)
     else:
         st.info("No active logs or matching criteria profiles recorded.")
@@ -356,7 +363,7 @@ with workspace_right:
     conn.close()
     
     if not chart_df.empty:
-        chart_df = chart_df.iloc[::-1]  # Match time sorting path chronological order
+        chart_df = chart_df.iloc[::-1]  # Match chronological order
         st.bar_chart(chart_df.set_index('Date'), y='Total', color="#10B981")
     else:
         st.caption("No quantitative metrics tracked dynamically yet.")
