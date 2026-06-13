@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime
 import streamlit as st
 
-# ReportLab Imports for PDF Generation
+# ReportLab Imports for Professional PDF Generation
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -137,23 +137,32 @@ def build_pdf_report(start_date_str, target_rider_name):
 # ==========================================
 # WEB APPLICATION UI LAYER (STREAMLIT)
 # ==========================================
-st.set_page_config(page_title="CeeJay Creations - Dashboard", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="CeeJay Creations - Dashboard Suite", layout="wide", initial_sidebar_state="expanded")
 init_db()
 
-# Custom CSS theme tweaks for a deep dark look
+# Desktop-Matched Custom Look CSS Theme
 st.markdown("""
     <style>
     .stApp { background-color: #020617; color: #F8FAFC; }
     [data-testid="stSidebar"] { background-color: #0B0F19; border-right: 1px solid #1E293B; }
+    div[data-testid="stMetricValue"] { color: #10B981 !important; }
     </style>
 """, unsafe_allow_html=True)
+
+# Fetch current dynamic rider array lists
+conn = sqlite3.connect(DB_NAME)
+cursor = conn.cursor()
+cursor.execute("SELECT name FROM riders ORDER BY name ASC")
+all_riders = [r[0] for r in cursor.fetchall()]
+conn.close()
 
 # --- SIDEBAR CONTROL PANEL ---
 with st.sidebar:
     st.title("CEEJAY CREATIONS")
-    st.subheader("Action Control Core")
+    st.caption("Action Control Core")
+    st.markdown("---")
     
-    # Action 1: Add New Rider
+    # 1. Add Rider Interface Module
     st.markdown("### Add New Rider Profile")
     new_rider_name = st.text_input("Rider Full Name", key="add_rider_input")
     if st.button("+ Add New Rider", use_container_width=True):
@@ -164,8 +173,9 @@ with st.sidebar:
                 cursor.execute("INSERT INTO riders (name) VALUES (?)", (new_rider_name.strip(),))
                 conn.commit()
                 st.success(f"Successfully added {new_rider_name}")
+                st.rerun()
             except sqlite3.IntegrityError:
-                st.error("Rider profile already exists.")
+                st.error("Rider record profile already exists.")
             finally:
                 conn.close()
         else:
@@ -173,24 +183,19 @@ with st.sidebar:
             
     st.markdown("---")
     
-    # Action 2: Record Payment Entries
+    # 2. Record Payment Interface Module
     st.markdown("### Log Entry Payments")
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("SELECT name FROM riders ORDER BY name ASC")
-    all_riders = [r[0] for r in cursor.fetchall()]
-    conn.close()
-    
     selected_rider = st.selectbox("Select Target Rider", ["Select Rider"] + all_riders)
     log_date = st.date_input("Transaction Date", datetime.today())
     payment_amount = st.text_input("Payment Amount (KES)", placeholder="e.g., 500")
     
     if st.button("💾 Save Entry Log", use_container_width=True):
         if selected_rider == "Select Rider":
-            st.error("Please choose a valid active rider account.")
+            st.error("Please add and select an active driver account row.")
         else:
             try:
-                amt_val = float(payment_amount.strip())
+                # Clean up characters text if needed
+                amt_val = float(payment_amount.replace("KES", "").replace(",", "").strip())
                 date_str = log_date.strftime('%Y-%m-%d')
                 
                 conn = sqlite3.connect(DB_NAME)
@@ -207,14 +212,12 @@ with st.sidebar:
                 st.success("Transaction metrics balanced securely.")
                 st.rerun()
             except ValueError:
-                st.error("Amount must be a valid numeric calculation.")
+                st.error("Amount fields must contain valid decimal integers.")
 
     st.markdown("---")
 
-    # Cloud-Safe Backup Tools (Keep Data Safe for Free)
+    # 3. System Storage Backup Management Panel
     st.markdown("### Free Cloud Storage Vault")
-    
-    # Download Database Button
     if os.path.exists(DB_NAME):
         with open(DB_NAME, "rb") as db_file:
             st.download_button(
@@ -222,21 +225,19 @@ with st.sidebar:
                 data=db_file,
                 file_name="rider_market_system.db",
                 mime="application/octet-stream",
-                use_container_width=True,
-                help="Save your database file directly to your phone to preserve your work history."
+                use_container_width=True
             )
             
-    # Upload/Restore Database Action
-    uploaded_db = st.file_uploader("📤 Restore System Database File", type=["db"], help="Upload your saved rider_market_system.db file to instantly recover all metrics.")
+    uploaded_db = st.file_uploader("📤 Restore System Database File", type=["db"])
     if uploaded_db is not None:
         if st.button("🔄 Execute System Restore", use_container_width=True):
             with open(DB_NAME, "wb") as f:
                 f.write(uploaded_db.getbuffer())
-            st.success("Ecosystem database restored successfully! Reloading pages...")
+            st.success("Database restored successfully!")
             st.rerun()
 
 # --- MAIN WORKSPACE ---
-# Header KPIs
+# Render KPIs Header Panel Cards
 conn = sqlite3.connect(DB_NAME)
 cursor = conn.cursor()
 cursor.execute("SELECT COUNT(id) FROM riders")
@@ -249,11 +250,11 @@ kpi1, kpi2 = st.columns(2)
 with kpi1:
     st.metric(label="TOTAL MANAGED RIDERS", value=str(count_riders))
 with kpi2:
-    st.metric(label="AGGREGATE REVENUE LEDGER", value=f"KES {sum_revenue:,.2f}")
+    st.metric(label="AGGREGATE REVENUE LEDGER (KES)", value=f"KES {sum_revenue:,.2f}")
 
 st.markdown("---")
 
-# Filters & Operations Ribbon
+# Filters, Searches, and Toolbar Ribbon
 col_f1, col_f2, col_f3 = st.columns([2, 2, 2])
 with col_f1:
     search_filter = st.text_input("🔍 Filter Live View Identity...")
@@ -262,13 +263,11 @@ with col_f2:
 with col_f3:
     rep_date = st.date_input("Notice Filter Start Date", datetime(2026, 1, 1))
 
-# Action Row for Document Engines
-col_b1, col_b2, _ = st.columns([2, 2, 4])
+# Action Trigger Row
+col_b1, col_b2, col_b3 = st.columns([2, 2, 2])
 with col_b1:
-    # Generate the PDF file seamlessly so it's ready for instant download
     rep_date_str = rep_date.strftime('%Y-%m-%d')
     pdf_file, msg = build_pdf_report(rep_date_str, rep_rider)
-    
     if pdf_file and os.path.exists(pdf_file):
         with open(pdf_file, "rb") as f:
             st.download_button(
@@ -279,41 +278,126 @@ with col_b1:
                 use_container_width=True
             )
     else:
-        st.button("📄 Prepare PDF Notice (No Data)", disabled=True, use_container_width=True)
+        st.button("📄 PDF Notice (Empty Filters)", disabled=True, use_container_width=True)
 
 with col_b2:
-    # CSV Export Logic
+    # CSV Core Database Query Logic
     conn = sqlite3.connect(DB_NAME)
-    query = '''
+    csv_query = '''
         SELECT r.name as 'Rider Name', p.payment_date as 'Payment Date', p.amount as 'Amount Received (KES)'
         FROM payments p JOIN riders r ON p.rider_id = r.id 
-        ORDER BY r.name ASC, p.payment_date ASC
+        WHERE p.payment_date >= ? ORDER BY r.name ASC, p.payment_date ASC
     '''
-    csv_df = pd.read_sql_query(query, conn)
+    csv_df = pd.read_sql_query(csv_query, conn, params=(rep_date_str,))
     conn.close()
     
     st.download_button(
         label="📊 Export Spreadsheet CSV",
         data=csv_df.to_csv(index=False).encode('utf-8'),
-        file_name="Rider_Market_Ledger.csv",
+        file_name=f"Rider_Market_Ledger_{rep_date_str}.csv",
         mime="text/csv",
         use_container_width=True
     )
 
-st.markdown("### Live View Grid Ledger")
+with col_b3:
+    # 4. Purge Profile Actions Selector Dropdown
+    purge_target = st.selectbox("Purge Target Account Selection", ["Select Profile to Delete"] + all_riders, label_visibility="collapsed")
+    if st.button("🗑️ Purge Rider Profile", use_container_width=True, type="primary"):
+        if purge_target != "Select Profile to Delete":
+            conn = sqlite3.connect(DB_NAME)
+            cursor = conn.cursor()
+            cursor.execute("PRAGMA foreign_keys = ON")
+            cursor.execute("DELETE FROM riders WHERE name = ?", (purge_target,))
+            conn.commit()
+            conn.close()
+            st.warning(f"Purged profile metric history logs for '{purge_target}'.")
+            st.rerun()
+        else:
+            st.error("Please pick an active profile account framework to delete.")
 
-# Load and Render Database Records
-conn = sqlite3.connect(DB_NAME)
-display_query = '''
-    SELECT r.id as 'System ID', r.name as 'Rider Identity', MAX(p.payment_date) as 'Most Recent Activity', p.amount as 'Latest Value'
-    FROM riders r LEFT JOIN payments p ON r.id = p.rider_id
-    WHERE r.name LIKE ?
-    GROUP BY r.id ORDER BY r.name ASC
-'''
-df_grid = pd.read_sql_query(display_query, conn, params=(f"%{search_filter}%",))
-conn.close()
+st.markdown("---")
 
-if not df_grid.empty:
-    st.dataframe(df_grid, use_container_width=True, hide_index=True)
-else:
-    st.info("No active logs or matching criteria profiles recorded.")
+# Content Display Layout: Left (Live view grid) & Right (Vectors and Historic Engine)
+workspace_left, workspace_right = st.columns([7, 5])
+
+with workspace_left:
+    st.markdown("### Live View Grid Ledger")
+    
+    # Load Interactive Grid Ledger Records directly matching searches
+    conn = sqlite3.connect(DB_NAME)
+    display_query = '''
+        SELECT r.id as 'System ID', r.name as 'Rider Identity', MAX(p.payment_date) as 'Most Recent Activity', p.amount as 'Latest Value'
+        FROM riders r LEFT JOIN payments p ON r.id = p.rider_id
+        WHERE r.name LIKE ?
+        GROUP BY r.id ORDER BY r.name ASC
+    '''
+    df_grid = pd.read_sql_query(display_query, conn, params=(f"%{search_filter}%",))
+    conn.close()
+
+    if not df_grid.empty:
+        # Formats Currency inside data table structure
+        df_grid['Latest Value'] = df_grid['Latest Value'].apply(lambda x: f"KES {x:,.2f}" if pd.notnull(x) else "None")
+        df_grid['Most Recent Activity'] = df_grid['Most Recent Activity'].fillna("No activity logged")
+        
+        # Displays sorting column capabilities natively in the web browser
+        st.dataframe(df_grid, use_container_width=True, hide_index=True)
+    else:
+        st.info("No active logs or matching criteria profiles recorded.")
+
+with workspace_right:
+    st.markdown("### 📊 Revenue Log Vectors")
+    
+    # Quantitative Vector calculation engine logic
+    conn = sqlite3.connect(DB_NAME)
+    chart_df = pd.read_sql_query('''
+        SELECT payment_date as 'Date', SUM(amount) as 'Total' 
+        FROM payments GROUP BY payment_date ORDER BY payment_date DESC LIMIT 6
+    ''', conn)
+    conn.close()
+    
+    if not chart_df.empty:
+        chart_df = chart_df.iloc[::-1]  # Match time sorting path chronological order
+        st.bar_chart(chart_df.set_index('Date'), y='Total', color="#10B981")
+    else:
+        st.caption("No quantitative metrics tracked dynamically yet.")
+        
+    st.markdown("### 🔄 Historic Adjustment Engine")
+    
+    # Historic Table Entry Logs Updates form
+    target_history_rider = st.selectbox("Inspect Remittance History Logs", ["Select Rider To Edit"] + all_riders)
+    
+    if target_history_rider != "Select Rider To Edit":
+        conn = sqlite3.connect(DB_NAME)
+        history_df = pd.read_sql_query('''
+            SELECT p.payment_date as 'Log Date', p.amount as 'Amount (KES)'
+            FROM payments p JOIN riders r ON p.rider_id = r.id
+            WHERE r.name = ? ORDER BY p.payment_date DESC
+        ''', conn, params=(target_history_rider,))
+        conn.close()
+        
+        if not history_df.empty:
+            st.dataframe(history_df, use_container_width=True, hide_index=True)
+            
+            # Sub-form fields to handle cell metric rebalancing securely
+            with st.form("adjustment_sub_form"):
+                target_edit_date = st.selectbox("Select Target Log Date", history_df['Log Date'].tolist())
+                new_adjusted_value = st.text_input("Modify Value (KES)")
+                submit_adjustment = st.form_submit_button("✏️ Update Balance")
+                
+                if submit_adjustment:
+                    try:
+                        clean_new_val = float(new_adjusted_value.strip())
+                        conn = sqlite3.connect(DB_NAME)
+                        cursor = conn.cursor()
+                        cursor.execute('''
+                            UPDATE payments SET amount = ? 
+                            WHERE payment_date = ? AND rider_id = (SELECT id FROM riders WHERE name = ?)
+                        ''', (clean_new_val, target_edit_date, target_history_rider))
+                        conn.commit()
+                        conn.close()
+                        st.success("Payment records adjusted securely.")
+                        st.rerun()
+                    except ValueError:
+                        st.error("Amount must be a clean numeric decimal calculation value.")
+        else:
+            st.info("No timeline logs available for this rider record profile.")
