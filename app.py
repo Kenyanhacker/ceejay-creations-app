@@ -146,7 +146,7 @@ st.markdown("""
     .stApp { background-color: #020617; color: #F8FAFC; }
     [data-testid="stSidebar"] { background-color: #0B0F19; border-right: 1px solid #1E293B; }
     </style>
-""", unsafehtml=True)
+""", unsafe_allow_html=True)
 
 # --- SIDEBAR CONTROL PANEL ---
 with st.sidebar:
@@ -205,6 +205,7 @@ with st.sidebar:
                 conn.commit()
                 conn.close()
                 st.success("Transaction metrics balanced securely.")
+                st.rerun()
             except ValueError:
                 st.error("Amount must be a valid numeric calculation.")
 
@@ -264,19 +265,21 @@ with col_f3:
 # Action Row for Document Engines
 col_b1, col_b2, _ = st.columns([2, 2, 4])
 with col_b1:
-    if st.button("📄 Prepare PDF Notice", use_container_width=True):
-        pdf_file, msg = build_pdf_report(rep_date.strftime('%Y-%m-%d'), rep_rider)
-        if pdf_file and os.path.exists(pdf_file):
-            with open(pdf_file, "rb") as f:
-                st.download_button(
-                    label="⬇️ Download PDF Notice",
-                    data=f,
-                    file_name=f"Rider_Notice_{rep_rider}_{rep_date.strftime('%Y-%m-%d')}.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
-        else:
-            st.error(msg)
+    # Generate the PDF file seamlessly so it's ready for instant download
+    rep_date_str = rep_date.strftime('%Y-%m-%d')
+    pdf_file, msg = build_pdf_report(rep_date_str, rep_rider)
+    
+    if pdf_file and os.path.exists(pdf_file):
+        with open(pdf_file, "rb") as f:
+            st.download_button(
+                label="📄 Download PDF Notice",
+                data=f,
+                file_name=f"Rider_Notice_{rep_rider}_{rep_date_str}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+    else:
+        st.button("📄 Prepare PDF Notice (No Data)", disabled=True, use_container_width=True)
 
 with col_b2:
     # CSV Export Logic
