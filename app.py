@@ -10,8 +10,14 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-# Free Cloud Standard Database File Name
-DB_NAME = "rider_market_system.db"
+# ==========================================
+# SECURE STORAGE PATH CONFIGURATION
+# ==========================================
+# If running on Streamlit Cloud, write to the persistent /data folder
+if os.path.exists("/data"):
+    DB_NAME = "/data/rider_market_system.db"
+else:
+    DB_NAME = "rider_market_system.db"
 
 # ==========================================
 # DATABASE LAYER
